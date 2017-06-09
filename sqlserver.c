@@ -17,20 +17,16 @@ int openSqlserver()
     char szTable[32]= "real_date_log";  
 
     //初始化db-library  
-    printf("dbinin--------\n");
     dbinit();  
     //连接数据库  
-    printf("dblogin---------\n");
     LOGINREC *loginrec=dblogin();  
     //连接数据库  
 	// 设置登录的用户名
-    printf("username---------\n");
     DBSETLUSER(loginrec,szUsername);  
 	// 设置登录密码
-    printf("password---------\n");
     DBSETLPWD(loginrec,szPassword);  
 	// 连接sqlserver服务器地址和端口号,这里才是连接
-    printf("open---------\n");
+    printf("open sqlserver...\n");
     dbprocess=dbopen(loginrec,szServer);  
     if(dbprocess==FAIL){  
         printf("Connect MSSQLSERVER fail\n");  
@@ -48,6 +44,34 @@ int openSqlserver()
     return 1;
 }
 
+int heartbeat(int device_id, char *real_id, char *name, char *val, int flag) 
+{    
+    int ret;
+    char cmd[256];
+    memset(cmd, 0, sizeof(cmd));
+
+    // 查询数据库中表中的内容
+    sprintf(cmd, "INSERT INTO real_date_log (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', getdate(), %d)", device_id, real_id, name, val, flag); 
+    printf("cmd:%s\n", cmd);
+    if (dbcmd(dbprocess, cmd) == FAIL) {
+        printf("dbcmd....\n");
+        return 0;
+    }
+
+	// 执行命令
+    if(dbsqlexec(dbprocess) == FAIL){  
+        ret = 0;
+        printf("heartbeat error\n");  
+    }  
+    else {
+        ret = 1;
+        printf("heartbeat ok\n");  
+//        printf("Query table success\n");  
+    }
+  
+    return ret;  
+}
+
 int insertInto(int device_id, char *real_id, char *name, char *val, long timestamp, int flag)  
 //int insertInto(int device_id, char *real_id, int id_len, char *name, int name_len, char *val, int val_len, int flag)  
 {    
@@ -55,12 +79,6 @@ int insertInto(int device_id, char *real_id, char *name, char *val, long timesta
     char cmd[256];
     memset(cmd, 0, sizeof(cmd));
 
-//    printf("time: %ld\n", timestamp);
-//    printf("device_id: %d\n", device_id);
-//    printf("real_id: %s\n", real_id);
-//    printf("name: %s\n", name);
-//    printf("val: %s\n", val);
-//    printf("flag: %d\n", flag);
     // 查询数据库中表中的内容
     sprintf(cmd, "INSERT INTO real_date_log (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', DATEADD(s, %d + 28800, '1970-01-01 00:00:00'), %d)", device_id, real_id, name, val, timestamp, flag);  
 //    printf("cmd:%s\n", cmd);
@@ -69,11 +87,11 @@ int insertInto(int device_id, char *real_id, char *name, char *val, long timesta
 	// 执行命令
     if(dbsqlexec(dbprocess) == FAIL){  
         ret = 0;
-        printf("Query table error\n");  
+        printf("insert sqlserver table error\n");  
     }  
     else {
         ret = 1;
-        printf("Query table success\n");  
+//        printf("Query table success\n");  
     }
   
     return ret;  

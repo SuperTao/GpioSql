@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import io 
+import os
 
 #gpioTuple = (15, 14, 13, 12, 36, 37, 38, 39)
 
@@ -31,6 +32,9 @@ def getInputValue(gpioIndex):
     with open('/sys/class/gpio/gpio%d/value' % gpioIndex, 'r+') as f:
         return f.read().strip('\n')  # delete the '\n' 
 
+def gpioInputFile(gpioIndex):
+    return open('/sys/class/gpio/gpio%d/value' % gpioIndex, 'r+')
+
 def setOutputValue(gpioIndex, value):
     with open('/sys/class/gpio/gpio%d/value' % gpioIndex, 'wb') as f:
         return f.write(str(value).encode())
@@ -58,6 +62,12 @@ def getGpioValues(gpioTuple):
         gpioValues.append(getInputValue(i))
         gpioUnexport(i)
     return gpioValues
+
+def unexportAllGPIO(gpioTuple):
+    # 如果有gpio被占用，先释放 
+    for i in gpioTuple:
+        if os.path.exists('/sys/class/gpio/gpio%d' % i):
+            gpioUnexport(i)
 
 def waitForEdge(gpioIndex):
     pass

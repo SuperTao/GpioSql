@@ -6,16 +6,25 @@
 #include <sybdb.h>  
 
 DBPROCESS *dbprocess;
+char tableName[32];
 
-int openSqlserver()
+/* 打开数据库
+ * 将一些数据保存到全局变量中,由于要用python调用C,在python中实现结构体比较麻烦，
+ * 所以就没有采用返回值给python，所以采用全局变量
+*/
+int openSqlserver(char *szUsername, char *szPassword, char *szDBName, char *szServer, char *szTable)
 {
     int ret;
-    char szUsername[32]= "wangzg";  
-    char szPassword[32]= "Wangzg123456";  
-    char szDBName[32]= "wangzg";  
-    char szServer[32]= "115.29.245.156:40949";  
-    char szTable[32]= "real_date_log";  
 
+    memset(tableName, 0, sizeof(tableName));
+    // 将数据库的表名保存到全局变量中
+    strcpy(tableName, szTable);
+    
+    printf("name: %s\n", szUsername);
+    printf("password: %s\n", szPassword);
+    printf("szDbname: %s\n", szDBName);
+    printf("szServer: %s\n", szServer);
+    printf("tableName: %s\n", tableName);
     //初始化db-library  
     dbinit();  
     //连接数据库  
@@ -51,8 +60,8 @@ int heartbeat(int device_id, char *real_id, char *name, char *val, int flag)
     memset(cmd, 0, sizeof(cmd));
 
     // 查询数据库中表中的内容
-    sprintf(cmd, "INSERT INTO real_date_log (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', getdate(), %d)", device_id, real_id, name, val, flag); 
-    printf("cmd:%s\n", cmd);
+    sprintf(cmd, "INSERT INTO %s (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', getdate(), %d)", tableName, device_id, real_id, name, val, flag); 
+
     if (dbcmd(dbprocess, cmd) == FAIL) {
         printf("dbcmd....\n");
         return 0;
@@ -61,27 +70,27 @@ int heartbeat(int device_id, char *real_id, char *name, char *val, int flag)
 	// 执行命令
     if(dbsqlexec(dbprocess) == FAIL){  
         ret = 0;
-        printf("heartbeat error\n");  
+    //    printf("heartbeat error\n");  
     }  
     else {
         ret = 1;
-        printf("heartbeat ok\n");  
-//        printf("Query table success\n");  
+    //    printf("heartbeat ok\n");  
     }
   
     return ret;  
 }
 
-int insertInto(int device_id, char *real_id, char *name, char *val, long timestamp, int flag)  
-//int insertInto(int device_id, char *real_id, int id_len, char *name, int name_len, char *val, int val_len, int flag)  
+// 插入一下数据到sqlserver中
+int insertInto(int device_id, char *real_id, char *name, char *val, long timestamp, int flag) 
 {    
     int ret;
     char cmd[256];
     memset(cmd, 0, sizeof(cmd));
 
     // 查询数据库中表中的内容
-    sprintf(cmd, "INSERT INTO real_date_log (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', DATEADD(s, %d + 28800, '1970-01-01 00:00:00'), %d)", device_id, real_id, name, val, timestamp, flag);  
-//    printf("cmd:%s\n", cmd);
+    // 时间传进来的是时间戳，需要转换成datetime类型
+    sprintf(cmd, "INSERT INTO %s (device_id, real_id, name, val, update_time, flag) VALUES (%d, '%s', '%s', '%s', DATEADD(s, %d + 28800, '1970-01-01 00:00:00'), %d)", tableName, device_id, real_id, name, val, timestamp, flag);  
+
     dbcmd(dbprocess, cmd);
 
 	// 执行命令
@@ -91,13 +100,13 @@ int insertInto(int device_id, char *real_id, char *name, char *val, long timesta
     }  
     else {
         ret = 1;
-//        printf("Query table success\n");  
     }
   
     return ret;  
 }
 
+// 关闭数据库
 void closeSqlserver()
 {
-    dbclose(dbprocess);  
+    dbclose(dbprocess); 
 }

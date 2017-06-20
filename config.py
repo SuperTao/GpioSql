@@ -2,47 +2,84 @@
 
 import os
 
-import ConfigParser
+import configparser
+#import ConfigParser
+import ConfigureInotify
 
-if os.path.isfile(os.getcwd() + '/sql.conf') == False:
-    cfg = ConfigParser.ConfigParser()
-    cfg.add_section('remote')
-    cfg.set('remote', 'ip' ,'115.29.245.156')
-    cfg.set('remote', 'port' ,'40949')
-    cfg.set('remote', 'user' ,'wangzg')
-    cfg.set('remote', 'password' ,'wangzg123456')
-    cfg.set('remote', 'table' ,'real_date_log')
+class ConfigFile(object):
+    def __init__(self):
+        # 查看当前目录是否存在sql.conf文件
+        if os.path.isfile(os.getcwd() + '/sql.conf') == False:
+            # 如果不存在文件，就创建配置文件，并添加默认值
+            cfg = configparser.ConfigParser()
+            cfg.add_section('remote')
+            cfg.set('remote', 'ip' ,'115.29.245.156')
+            cfg.set('remote', 'port' ,'40949')
+            cfg.set('remote', 'user' ,'wangzg')
+            cfg.set('remote', 'password' ,'Wangzg123456')
+            cfg.set('remote', 'database' ,'wangzg')
+            cfg.set('remote', 'table' ,'real_date_log')
+        
+            cfg.add_section('localhost')
+            cfg.set('localhost', 'ip' ,'127.0.0.1')
+            cfg.set('localhost', 'port' ,'3306')
+            cfg.set('localhost', 'user' ,'root')
+            cfg.set('localhost', 'password' ,'aplex')
+            cfg.set('localhost', 'database' ,'gpio')
+            cfg.set('localhost', 'table' ,'real_date_log')
+        
+            cfg.add_section('interval')
+            cfg.set('interval', 'heartbeat', '1')
+            cfg.set('interval', 'upload_data', '5')
+        
+            cfg.write(open(os.getcwd() + '/sql.conf', 'w+'))
 
-    cfg.add_section('localhost')
-    cfg.set('localhost', 'ip' ,'127.0.0.1')
-    cfg.set('localhost', 'port' ,'3306')
-    cfg.set('localhost', 'user' ,'root')
-    cfg.set('localhost', 'password' ,'aplex')
+        # 新建一个监听文件变化的类
+        self.cfgIno = ConfigureInotify.ConfigureInotify()
+        # 设置要监听文件
+        self.cfgIno.set_config_file("sql.conf")
+        # 开始监听
+        self.cfgIno.start()
+    
+    def getRemoteIp(self):
+        return self.cfgIno.get_section_value('remote', 'ip')
 
-    cfg.add_section('interval')
-    cfg.set('interval', 'heartbeat', '1')
-    cfg.set('interval', 'upload_data', '5')
-
-    cfg.write(open('./sql.conf', 'w+'))
-
-else:
-    cfg = ConfigParser.ConfigParser()
-    cfg.read('./sql.conf')
-    print cfg.items('remote')
-    print cfg.get('remote', 'ip')
-    print cfg.getint('remote', 'port')
-    print cfg.get('remote', 'user')
-    print cfg.get('remote', 'password')
-    print cfg.get('remote', 'table')
-
-    print cfg.items('localhost')
-    print cfg.get('remote', 'ip')
-    print cfg.getint('remote', 'port')
-    print cfg.get('remote', 'user')
-    print cfg.get('remote', 'password')
-
-    print cfg.items('interval')
-    print cfg.get('interval', 'heartbeat')
-    print cfg.get('interval', 'upload_data')
+    def getRemotePort(self):
+        return self.cfgIno.get_section_value('remote', 'port')
 
 
+    def getRemoteUser(self):
+        return self.cfgIno.get_section_value('remote', 'user')
+    def getRemotePassword(self):
+        return self.cfgIno.get_section_value('remote', 'password')
+        
+    def getRemoteDatabase(self):
+        return self.cfgIno.get_section_value('remote', 'database')
+
+    def getRemoteTable(self):
+        return self.cfgIno.get_section_value('remote', 'table')
+
+    def getlocalIp(self):
+        return self.cfgIno.get_section_value('remote', 'ip')
+
+    def getLocalPort(self):
+        return self.cfgIno.get_section_value('remote', 'port')
+
+    def getLocalUser(self):
+        return self.cfgIno.get_section_value('remote', 'user')
+
+    def getLocalPassword(self):
+        return self.cfgIno.get_section_value('remote', 'password')
+
+    def getLocalDatabase(self):
+        return self.cfgIno.get_section_value('remote', 'database')
+
+    def getLocalTable(self):
+        return self.cfgIno.get_section_value('remote', 'table')
+       
+    def getHeartbeatInterval(self):
+        return self.cfgIno.get_section_value('interval', 'heartbeat')
+
+    def getUploadInterval(self):
+        return self.cfgIno.get_section_value('interval', 'upload_data')
+        

@@ -30,7 +30,7 @@ class HeartbeatThread(threading.Thread):
         while True:
             # 判断是否是这个类第一次连接
             if self.first_connect or self.upload_result == False:
-                print ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort()))
+#                print ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort()))
                 # 链接sqlserver
                 if sqlserver.openSqlserver(cfg.getRemoteUser().encode(), cfg.getRemotePassword().encode(), cfg.getRemoteDatabase().encode(), ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort())).encode(), cfg.getRemoteTable().encode()) == 0:
                     # 失败的话，1秒后重新连接
@@ -41,16 +41,15 @@ class HeartbeatThread(threading.Thread):
                 self.upload_result = True 
             # 获取锁
             mutexLock.acquire()
-            print ('heartbeat......')
             # 发送心跳数据
             if sqlserver.heartbeat(1, '0'.encode(), 'heartbeat'.encode(), '1'.encode(), 0) == 0:
                 # 失败的话，释放锁
+                print ('heart beat error--------')
                 mutexLock.release()
                 self.upload_result = False
                 continue
 
             mutexLock.release()
-#            print ('heartbeat ' + cfg.getHeartbeatInterval())
             time.sleep(int(cfg.getHeartbeatInterval()))
 
 class UpdateMysqlThread(threading.Thread):
@@ -59,23 +58,29 @@ class UpdateMysqlThread(threading.Thread):
 
     def run(self):
         gpioFd = []
-        gpioDB = mysql.Mysql()
+        # 创建数据库对象
+        gpioDB = mysql.Mysql(cfg.getLocalIp(), int(cfg.getLocalPort()), cfg.getLocalUser(), cfg.getLocalPassword(), cfg.getLocalDatabase(), cfg.getLocalTable())
+        # 连接数据库
         gpioDB.connectDatabase()
         epoll = select.epoll()
         # 初始化，更新一次本地所有的gpio的状态
         for gpioIndex in range(8):
             # 更新gpio口状态
+            # 申请gpio
             gpio.gpioExport(gpioTuple[gpioIndex])
+            # 设置为输入
             gpio.setInput(gpioTuple[gpioIndex])
+            # 设置gpio的中断触发方式为双边沿触发
             gpio.setEdge(gpioTuple[gpioIndex], 'both')
             # 插入gpio的状态到sqlserver
             gpioDB.insertInto(gpioIndex, '%d' % (gpioIndex + 1) , 'gpio%d' % (gpioIndex+1), gpio.getInputValue(gpioTuple[gpioIndex]), gpioIndex)
             # 获取value的文件,后面的操作，文件都是一直打开的，避免重复打开关闭文件带来的时间上的浪费
             f = gpio.gpioInputFile(gpioTuple[gpioIndex])
             gpioFd.append(f)
-            print ('fileno: %d' % f.fileno())
+            #print ('fileno: %d' % f.fileno())
             # 注册到epoll中
             epoll.register(f, select.EPOLLERR | select.EPOLLPRI)
+
         while True:
             events = epoll.poll()
             for fileno, event in events:
@@ -85,7 +90,7 @@ class UpdateMysqlThread(threading.Thread):
                     for i in range(8):
                         if fileno == gpioFd[i].fileno():
                             value = gpioFd[i].read().strip('\n')
-                            print ('f: %s' % value)
+                            # print ('f: %s' % value)
                             # 文件指针移动到文件开头
                             gpioFd[i].seek(0, 0)
                             # 保存到mysql中
@@ -98,17 +103,17 @@ class UpdateMysqlThread(threading.Thread):
 class UploadSqlserverThread(threading.Thread):
     first_connect = True
     upload_result = True
+
     def __init__(self):
         threading.Thread.__init__(self)
 
     def run(self):
-        gpioDB = mysql.Mysql()
+        gpioDB = mysql.Mysql(cfg.getLocalIp(), int(cfg.getLocalPort()), cfg.getLocalUser(), cfg.getLocalPassword(), cfg.getLocalDatabase(), cfg.getLocalTable())
         gpioDB.connectDatabase()
         sqlserver = cdll.LoadLibrary(os.getcwd() + '/libsqlserver.so')
-
         while True:
             if self.first_connect or self.upload_result == False:
-                print ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort()))
+                #print ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort()))
                 if sqlserver.openSqlserver(cfg.getRemoteUser().encode(), cfg.getRemotePassword().encode(), cfg.getRemoteDatabase().encode(), ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort())).encode(), cfg.getRemoteTable().encode()) == 0:
                     time.sleep(1)
                     continue
@@ -135,10 +140,7 @@ class UploadSqlserverThread(threading.Thread):
                 mutexLock.release()
                 # 更新完成的数据在本地删除
                 gpioDB.deleteByRealDateLogId(res[0])
-#gpioDB.deleteByUpdateTime(timeLocal)
-            print ('upload interval :' + cfg.getUploadInterval())
             time.sleep(int(cfg.getUploadInterval()))
-#time.sleep(int(cfg.interval_uploadData))
 
 if __name__ == '__main__':
     # 先释放所有的gpio端口，防止被其他应用程序占用

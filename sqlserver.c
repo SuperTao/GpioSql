@@ -20,11 +20,11 @@ int openSqlserver(char *szUsername, char *szPassword, char *szDBName, char *szSe
     // 将数据库的表名保存到全局变量中
     strcpy(tableName, szTable);
     
-    printf("name: %s\n", szUsername);
-    printf("password: %s\n", szPassword);
-    printf("szDbname: %s\n", szDBName);
-    printf("szServer: %s\n", szServer);
-    printf("tableName: %s\n", tableName);
+//    printf("name: %s\n", szUsername);
+//    printf("password: %s\n", szPassword);
+//    printf("szDbname: %s\n", szDBName);
+//    printf("szServer: %s\n", szServer);
+//    printf("tableName: %s\n", tableName);
     //初始化db-library  
     dbinit();  
     //连接数据库  
@@ -35,7 +35,7 @@ int openSqlserver(char *szUsername, char *szPassword, char *szDBName, char *szSe
 	// 设置登录密码
     DBSETLPWD(loginrec,szPassword);  
 	// 连接sqlserver服务器地址和端口号,这里才是连接
-    printf("open sqlserver...\n");
+//    printf("open sqlserver...\n");
     dbprocess=dbopen(loginrec,szServer);  
     if(dbprocess==FAIL){  
         printf("Connect MSSQLSERVER fail\n");  

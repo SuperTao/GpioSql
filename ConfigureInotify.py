@@ -19,7 +19,8 @@ class InotifyEventHandler(ProcessEvent):
 class ConfigureInotify(threading.Thread):
 
     __mutex = threading.Lock()
-    __configure_file_path = os.getcwd() + '/sql.conf'
+    #__configure_file_path = os.getcwd() + '/sql.conf'
+    __configure_file_path = '/etc/aplex/config.ini'
     config = configparser.ConfigParser()
 
     # 使用单例模式来生成统一的对象
@@ -113,7 +114,8 @@ if __name__ == '__main__':
     print(ConfigureInotify())
     print(configureInotify)
 
-    configureInotify.set_config_file("sql.conf")
+    configureInotify.set_config_file("/etc/aplex/sql.conf")
+    #configureInotify.set_config_file("sql.conf")
     configureInotify.start()
 
     while True:

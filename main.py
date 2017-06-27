@@ -26,7 +26,8 @@ class HeartbeatThread(threading.Thread):
 
     def run(self):
         # 打开C语言的库，可以调用里面的函数
-        sqlserver = cdll.LoadLibrary(os.getcwd() + '/libsqlserver.so')
+        #sqlserver = cdll.LoadLibrary(os.getcwd() + '/libsqlserver.so')
+        sqlserver = cdll.LoadLibrary('/usr/share/gpio/libsqlserver.so')
         while True:
             # 判断是否是这个类第一次连接
             if self.first_connect or self.upload_result == False:
@@ -110,7 +111,8 @@ class UploadSqlserverThread(threading.Thread):
     def run(self):
         gpioDB = mysql.Mysql(cfg.getLocalIp(), int(cfg.getLocalPort()), cfg.getLocalUser(), cfg.getLocalPassword(), cfg.getLocalDatabase(), cfg.getLocalTable())
         gpioDB.connectDatabase()
-        sqlserver = cdll.LoadLibrary(os.getcwd() + '/libsqlserver.so')
+        #sqlserver = cdll.LoadLibrary(os.getcwd() + '/libsqlserver.so')
+        sqlserver = cdll.LoadLibrary('/usr/share/gpio/libsqlserver.so')
         while True:
             if self.first_connect or self.upload_result == False:
                 #print ('%s:%s' % (cfg.getRemoteIp(), cfg.getRemotePort()))
